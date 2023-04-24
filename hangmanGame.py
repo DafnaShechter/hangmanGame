@@ -1,9 +1,9 @@
 import os
+import sys
 
-file_path = input("Enter the path to the file: ")
-index = int(input("Enter the number of word: "))
 MAX_TRIES = 6
 HANGMAN_PHOTOS = {
+    0: """    x-------x""",
 
     1: """
     x-------x
@@ -54,7 +54,6 @@ HANGMAN_PHOTOS = {
     |
     """
 }
-
 HANGMAN_ASCII_ART = """ 
   _    _                                         
  | |  | |                                        
@@ -64,12 +63,7 @@ HANGMAN_ASCII_ART = """
  |_|  |_|\__,_|_| |_|\__, |_| |_| |_|\__,_|_| |_|
                       __/ |                      
                      |___/"""
-
 HANGMAN_ASCII_ART = "\033[95m" + HANGMAN_ASCII_ART + "\033[0m"
-
-MAX_TRIES = 6
-
-print("Welcome to the game Hangman.", HANGMAN_ASCII_ART, '\n')
 
 
 def check_win(secret_word, old_letters_guessed):
@@ -90,9 +84,10 @@ def show_hidden_word(secret_word, old_letters_guessed):
 
 
 def check_valid_input(letter_guessed, old_letters_guessed):
-    if len(letter_guessed) > 1 or not letter_guessed.isalpha():
+    if len(letter_guessed) != 1 or not letter_guessed.isalpha():
         return False
     if letter_guessed.lower() in old_letters_guessed:
+        print("You have already guessed that letter:", ' -> '.join(sorted(old_letters_guessed)))
         return False
     return True
 
@@ -102,37 +97,47 @@ def try_update_letter_guessed(letter_guessed, old_letters_guessed):
         old_letters_guessed.append(letter_guessed.lower())
         return True
     else:
-        print("X\n" + ' -> '.join(sorted(old_letters_guessed)))
+        print(":(\n")
         return False
 
 
+def input_details():
+    file_path = input("Enter file path: ")
+    index = int(input("Enter index: "))
+    return file_path, index
+
+
 def choose_word(file_path, index):
-    with open(file_path, 'r') as f:
-        words = f.read().split()
+    try:
+        with open(file_path, 'r') as f:
+            words = f.read().split()
+    except FileNotFoundError:
+        print(f"Error: file '{file_path}' not found")
+        sys.exit(1)
+
     num_of_words = len(set(words))
     index -= 1  # Adjust index to start from 0
     word_index = index % len(words)  # Circular index
     secret_word = words[word_index]
-    return num_of_words, secret_word
+    return num_of_words, secret_word.lower()
 
 
 def print_hangman(num_of_tries):
-    print(HANGMAN_PHOTOS[num_of_tries])
+    print(HANGMAN_PHOTOS[num_of_tries], '\n')
 
 
 def print_opening():
-    print("Let's play hangman!")
-    print(HANGMAN_PHOTOS[1])
-    print(f"Available letters: {'abcdefghijklmnopqrstuvwxyz'}")
+    print("Welcome to the game Hangman.\n", HANGMAN_ASCII_ART + '\n')
+    print(f"\nAvailable letters: {'a b c d e f g h i j k l m n o p q r s t u v w x y z'}\n")
 
 
 def get_user_input(old_letters_guessed):
     while True:
-        letter_guessed = input("Guess a letter: ").lower()
+        letter_guessed = input("\nGuess a letter: ").lower()
         if check_valid_input(letter_guessed, old_letters_guessed):
             return letter_guessed
         else:
-            print("Invalid input, or letter already guessed. Please try again.")
+            print("X")
 
 
 def play_again():
@@ -141,8 +146,9 @@ def play_again():
 
 
 def main():
-    print_opening()
+    file_path, index = input_details()
     num_of_words, secret_word = choose_word(file_path, index)
+    print_opening()
     old_letters_guessed = []
     num_of_tries = 0
 
@@ -152,6 +158,7 @@ def main():
         if try_update_letter_guessed(letter_guessed, old_letters_guessed):
             if letter_guessed not in secret_word:
                 num_of_tries += 1
+                print(":(\n")
                 print_hangman(num_of_tries)
 
     if check_win(secret_word, old_letters_guessed):
@@ -162,7 +169,6 @@ def main():
         print(f"Sorry, you lost. The word was '{secret_word}'.")
 
     if play_again():
-        os.system('cls' if os.name == 'nt' else 'clear')
         main()
 
 
